@@ -1,0 +1,72 @@
+Metadata-Version: 2.4
+Name: xai-guardrails
+Version: 0.1.0
+Summary: Explainability, fairness, and calibration audits for ML models
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.26
+Requires-Dist: scikit-learn>=1.4
+Provides-Extra: plots
+Requires-Dist: matplotlib>=3.8; extra == "plots"
+Provides-Extra: explain
+Requires-Dist: shap>=0.45; extra == "explain"
+Provides-Extra: test
+Requires-Dist: pytest>=8.0; extra == "test"
+
+# XAI Explainability & Guardrail Evaluation Toolbox
+
+A compact, model-agnostic audit package for checking binary classification pipelines before deployment. It reports overall predictive quality, subgroup fairness, probability calibration, configurable guardrail decisions, and model-agnostic local feature attributions.
+
+## Quick start
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[plots,test]"
+python -m xai_guardrails.cli --output artifacts
+```
+
+The demo trains a small scikit-learn classifier on generated data and writes `artifacts/audit_report.json` and `artifacts/group_metrics.png`. The Python module command works from a source checkout; the `xai-guardrails` command is available after installation.
+
+## Audit a model
+
+Pass ground-truth labels, positive-class scores, and sensitive-group labels to the same audit function. Scores can come from scikit-learn `predict_proba` or Keras `model.predict`; this package does not require a particular model framework.
+
+```python
+from xai_guardrails import AuditThresholds, audit_predictions
+
+report = audit_predictions(
+    y_true=y_test,
+    y_score=model.predict_proba(X_test)[:, 1],
+    sensitive_features=protected_group,
+    thresholds=AuditThresholds(max_demographic_parity_gap=0.10, max_ece=0.08),
+)
+print(report.to_dict())
+```
+
+For a Keras sigmoid output, pass `model.predict(X_test, verbose=0).ravel()` as `y_score`. For a two-column softmax output, pass the positive-class column.
+
+## What is measured
+
+- Overall accuracy, precision, recall, F1, ROC AUC, Brier score, and expected calibration error (ECE).
+- Per-group support, selection rate, accuracy, true-positive rate, and false-positive rate.
+- Demographic-parity gap, equal-opportunity gap, equalized-odds gap, and selection-rate ratio.
+- Configurable pass/fail guardrails with the observed value and threshold in every finding.
+- Model-agnostic local feature attributions based on replacing one input feature with a reference value and measuring the change in positive-class score.
+
+The fairness statistics are descriptive diagnostics, not proof that a system is fair. They depend on representative labels, adequately sized groups, legally and ethically appropriate sensitive attributes, and context-specific thresholds. The toolbox does not infer protected classes, make deployment decisions, or replace a domain/legal review. Small groups and missing subgroups are explicitly surfaced rather than silently treated as passing.
+
+## Explain an individual prediction
+
+`local_feature_attributions` works with a prediction callback that returns positive-class probabilities. Numeric columns use the supplied reference row; if none is provided, the function uses the column median. It handles tabular NumPy arrays and pandas-like frames while preserving feature names when available. The optional `explain` extra installs SHAP for projects that need a model-specific explainer; the core package has no SHAP or TensorFlow dependency.
+
+## EthicalML / Fairlearn integration
+
+The audit report uses explicit, framework-neutral definitions so it can sit around EthicalML, Fairlearn, scikit-learn, or Keras pipelines without changing model code. Keep external fairness-toolkit metrics alongside this report when a project has standardized on a particular toolkit, and compare definitions before interpreting results; similarly named metrics can use different denominators or undefined-group policies.
+
+## Development
+
+```powershell
+python -m pip install -e ".[plots,test]"
+pytest
+```

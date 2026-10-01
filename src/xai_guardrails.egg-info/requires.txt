@@ -1,0 +1,11 @@
+numpy>=1.26
+scikit-learn>=1.4
+
+[explain]
+shap>=0.45
+
+[plots]
+matplotlib>=3.8
+
+[test]
+pytest>=8.0
