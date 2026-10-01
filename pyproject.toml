@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xai-guardrails"
+version = "0.1.0"
+description = "Explainability, fairness, and calibration audits for ML models"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "scikit-learn>=1.4",
+]
+
+[project.optional-dependencies]
+plots = ["matplotlib>=3.8"]
+explain = ["shap>=0.45"]
+test = ["pytest>=8.0"]
+
+[project.scripts]
+xai-guardrails = "xai_guardrails.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
